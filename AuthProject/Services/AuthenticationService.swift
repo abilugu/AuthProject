@@ -20,6 +20,11 @@ class AuthenticationService: NSObject, ObservableObject {
         
         // Use Google Sign-In for Google services
         if service.name.contains("Google") {
+            // Check if we have a valid Google client ID
+            let clientId = AppEnvironment.googleClientId
+            if clientId.hasPrefix("YOUR_") {
+                throw AuthenticationError.invalidConfiguration
+            }
             return try await googleSignInService.authenticateWithGoogle(for: service)
         }
         
@@ -76,6 +81,25 @@ class AuthenticationService: NSObject, ObservableObject {
                 }
                 
                 print("Received callback URL: \(callbackURL)")
+                
+                // Check for OAuth errors in the callback URL
+                if let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
+                   let errorParam = components.queryItems?.first(where: { $0.name == "error" })?.value {
+                    print("OAuth error received: \(errorParam)")
+                    
+                    // Handle specific Microsoft OAuth errors
+                    switch errorParam {
+                    case "server_error":
+                        continuation.resume(throwing: AuthenticationError.oauthFailed)
+                    case "access_denied":
+                        continuation.resume(throwing: AuthenticationError.oauthCancelled)
+                    case "invalid_request":
+                        continuation.resume(throwing: AuthenticationError.invalidConfiguration)
+                    default:
+                        continuation.resume(throwing: AuthenticationError.oauthFailed)
+                    }
+                    return
+                }
                 
                 // Extract authorization code from callback
                 guard let authCode = self.configManager.extractAuthCode(from: callbackURL) else {
@@ -135,8 +159,6 @@ class AuthenticationService: NSObject, ObservableObject {
             throw AuthenticationError.networkError
         }
         
-        print("Token exchange response status: \(httpResponse.statusCode)")
-        
         if httpResponse.statusCode != 200 {
             let errorResponse = String(data: data, encoding: .utf8) ?? "Unknown error"
             print("Token exchange failed with status: \(httpResponse.statusCode)")
@@ -146,6 +168,10 @@ class AuthenticationService: NSObject, ObservableObject {
         
         do {
             let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+            
+            // Validate if this looks like a real OAuth token
+            let isRealAccessToken = validateOAuthToken(tokenResponse.accessToken)
+            
             return OAuthCredentials(
                 accessToken: tokenResponse.accessToken,
                 refreshToken: tokenResponse.refreshToken,
@@ -154,6 +180,7 @@ class AuthenticationService: NSObject, ObservableObject {
             )
         } catch {
             print("Failed to decode token response: \(error)")
+            print("Raw response data: \(String(data: data, encoding: .utf8) ?? "Unable to decode")")
             throw AuthenticationError.invalidResponse
         }
     }
@@ -188,8 +215,13 @@ class AuthenticationService: NSObject, ObservableObject {
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthenticationError.oauthFailed
+        }
+        
+        if httpResponse.statusCode != 200 {
+            let errorResponse = String(data: data, encoding: .utf8) ?? "Unknown error"
+            print("Refresh Token Failed: \(errorResponse)")
             throw AuthenticationError.oauthFailed
         }
         
@@ -293,6 +325,50 @@ class AuthenticationService: NSObject, ObservableObject {
         }
         
         return try await authenticateWithOAuth(for: service)
+    }
+    
+    // MARK: - Token Validation
+    
+    private func validateOAuthToken(_ token: String) -> Bool {
+        // Real OAuth tokens typically have these characteristics:
+        // 1. Reasonable length (usually 100-2000 characters)
+        // 2. Various formats: JWT, Microsoft format, Google format, etc.
+        // 3. Not placeholder text
+        
+        // Check length
+        guard token.count >= 50 && token.count <= 5000 else {
+            return false
+        }
+        
+        // Check for placeholder text
+        let placeholderTexts = [
+            "your-", "YOUR_", "placeholder", "dummy", "test", "example",
+            "access_token", "refresh_token", "api_key"
+        ]
+        
+        for placeholder in placeholderTexts {
+            if token.lowercased().contains(placeholder.lowercased()) {
+                return false
+            }
+        }
+        
+        // Check for Microsoft token format (starts with specific patterns)
+        if token.hasPrefix("EwA") || token.hasPrefix("M.C") {
+            return true
+        }
+        
+        // Check for JWT-like format (contains dots and base64-like characters)
+        let jwtPattern = #"^[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=]+$"#
+        let jwtRegex = try! NSRegularExpression(pattern: jwtPattern)
+        let jwtMatches = jwtRegex.matches(in: token, range: NSRange(token.startIndex..., in: token))
+        
+        // Check for other OAuth token formats (long alphanumeric strings)
+        let alphanumericPattern = #"^[A-Za-z0-9\-_\.!*$]+$"#
+        let alphanumericRegex = try! NSRegularExpression(pattern: alphanumericPattern)
+        let alphanumericMatches = alphanumericRegex.matches(in: token, range: NSRange(token.startIndex..., in: token))
+        
+        // Token is valid if it matches JWT format OR is a long alphanumeric string OR is Microsoft format
+        return jwtMatches.count > 0 || (alphanumericMatches.count > 0 && token.count > 100)
     }
 }
 

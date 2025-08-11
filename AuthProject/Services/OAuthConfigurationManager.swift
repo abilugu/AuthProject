@@ -19,7 +19,7 @@ class OAuthConfigurationManager {
                 redirectURI: "com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub:/",
                 isPublicClient: true
             )
-        case let name where name.contains("Microsoft") || name.contains("Office"):
+        case let name where name.contains("Office") || name.contains("OneDrive"):
             return OAuthConfig(
                 clientId: AppEnvironment.microsoftClientId,
                 clientSecret: AppEnvironment.microsoftClientSecret,
@@ -39,16 +39,18 @@ class OAuthConfigurationManager {
         switch serviceName {
         case let name where name.contains("Google Calendar"):
             return ["https://www.googleapis.com/auth/calendar"]
+        case let name where name.contains("Google Sheets"):
+            return ["https://www.googleapis.com/auth/spreadsheets"]
         case let name where name.contains("Google Drive"):
             return ["https://www.googleapis.com/auth/drive"]
         case let name where name.contains("Google Gmail"):
             return ["https://www.googleapis.com/auth/gmail.send"]
-        case let name where name.contains("Microsoft Calendar"):
-            return ["https://graph.microsoft.com/Calendars.ReadWrite"]
-        case let name where name.contains("Microsoft OneDrive"):
-            return ["https://graph.microsoft.com/Files.ReadWrite"]
-        case let name where name.contains("Microsoft Outlook"):
-            return ["https://graph.microsoft.com/Mail.Send"]
+        case let name where name.contains("Office 365 Calendar"):
+            return ["https://graph.microsoft.com/Calendars.ReadWrite", "offline_access"]
+        case let name where name.contains("Office 365 Mail"):
+            return ["https://graph.microsoft.com/Mail.Send", "offline_access"]
+        case let name where name.contains("OneDrive"):
+            return ["https://graph.microsoft.com/Files.ReadWrite", "offline_access"]
         default:
             return []
         }
@@ -71,12 +73,9 @@ class OAuthConfigurationManager {
     }
     
     func extractAuthCode(from callbackURL: URL) -> String? {
-        print("Extracting auth code from URL: \(callbackURL)")
-        
         // Try query parameters first
         if let components = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false),
            let code = components.queryItems?.first(where: { $0.name == "code" })?.value {
-            print("Found auth code in query parameters: \(code)")
             return code
         }
         
@@ -86,9 +85,7 @@ class OAuthConfigurationManager {
             for item in fragmentItems {
                 let keyValue = item.components(separatedBy: "=")
                 if keyValue.count == 2 && keyValue[0] == "code" {
-                    let code = keyValue[1]
-                    print("Found auth code in fragment: \(code)")
-                    return code
+                    return keyValue[1]
                 }
             }
         }
@@ -97,13 +94,10 @@ class OAuthConfigurationManager {
         let pathComponents = callbackURL.pathComponents
         for (index, component) in pathComponents.enumerated() {
             if component == "code" && index + 1 < pathComponents.count {
-                let code = pathComponents[index + 1]
-                print("Found auth code in path: \(code)")
-                return code
+                return pathComponents[index + 1]
             }
         }
         
-        print("No auth code found in URL")
         return nil
     }
 } 

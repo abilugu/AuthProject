@@ -4,8 +4,13 @@ struct CredentialsView: View {
     @ObservedObject var viewModel: IntegrationViewModel
     @State private var selectedService: ServiceMetadata?
     @State private var showingCredentialDetails = false
+    @State private var isExporting = false
+    @State private var exportError: String?
+    @State private var showingExportSuccess = false
+    @State private var exportedSheetId: String?
     
     private let storageService = StorageService.shared
+    private let exportService = GoogleSheetsExportService.shared
     
     var body: some View {
         NavigationView {
@@ -27,11 +32,41 @@ struct CredentialsView: View {
                 }
                 .navigationTitle("Credentials")
             } else {
-                List {
-                    ForEach(viewModel.storedServices) { service in
-                        CredentialServiceCardView(service: service) {
-                            selectedService = service
-                            showingCredentialDetails = true
+                VStack {
+                    // Export Button
+                    if !viewModel.storedServices.isEmpty {
+                        Button(action: exportCredentials) {
+                            HStack {
+                                if isExporting {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                        .foregroundColor(.white)
+                                } else {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .foregroundColor(.white)
+                                }
+                                
+                                Text(isExporting ? "Exporting..." : "Export to Google Sheets")
+                                    .foregroundColor(.white)
+                                    .fontWeight(.medium)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(isExporting ? Color.gray : Color.blue)
+                            .cornerRadius(10)
+                        }
+                        .disabled(isExporting)
+                        .padding(.horizontal)
+                        .padding(.top)
+                    }
+                    
+                    // Credentials List
+                    List {
+                        ForEach(viewModel.storedServices) { service in
+                            CredentialServiceCardView(service: service) {
+                                selectedService = service
+                                showingCredentialDetails = true
+                            }
                         }
                     }
                 }
@@ -39,7 +74,58 @@ struct CredentialsView: View {
                 .sheet(item: $selectedService) { service in
                     CredentialDetailView(service: service)
                 }
+                .alert("Export Error", isPresented: .constant(exportError != nil)) {
+                    Button("OK") {
+                        exportError = nil
+                    }
+                } message: {
+                    Text(exportError ?? "")
+                }
+                .alert("Export Successful", isPresented: $showingExportSuccess) {
+                    Button("Open in Google Sheets") {
+                        if let sheetId = exportedSheetId {
+                            openGoogleSheet(sheetId: sheetId)
+                        }
+                    }
+                    Button("OK") {
+                        showingExportSuccess = false
+                        exportedSheetId = nil
+                    }
+                } message: {
+                    Text("Your credentials have been exported to Google Sheets successfully!")
+                }
             }
+        }
+    }
+    
+    private func exportCredentials() {
+        guard !viewModel.storedServices.isEmpty else { return }
+        
+        isExporting = true
+        exportError = nil
+        
+        Task {
+            do {
+                let sheetId = try await exportService.exportCredentialsToGoogleSheets()
+                
+                await MainActor.run {
+                    isExporting = false
+                    exportedSheetId = sheetId
+                    showingExportSuccess = true
+                }
+            } catch {
+                await MainActor.run {
+                    isExporting = false
+                    exportError = error.localizedDescription
+                }
+            }
+        }
+    }
+    
+    private func openGoogleSheet(sheetId: String) {
+        let urlString = "https://docs.google.com/spreadsheets/d/\(sheetId)"
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url)
         }
     }
 }

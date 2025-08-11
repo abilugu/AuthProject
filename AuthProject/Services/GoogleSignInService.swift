@@ -13,80 +13,43 @@ class GoogleSignInService: ObservableObject {
     // MARK: - Google Sign-In Configuration
     
     func configure() {
-        print("=== Google Sign-In Configuration Debug ===")
-        
-        // First, let's check if the URL scheme is properly registered
-        checkURLSchemes()
-        
         // Use environment variable for client ID
         let clientId = AppEnvironment.googleClientId
         
-        print("✓ Google Sign-In Configuration:")
-        print("  CLIENT_ID: \(clientId)")
-        print("  REVERSED_CLIENT_ID: com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub")
+        // Check if we're using a placeholder
+        if clientId.hasPrefix("YOUR_") {
+            print("⚠️  WARNING: Using placeholder client ID")
+            print("   Please set GOOGLE_CLIENT_ID environment variable")
+            print("   Google Sign-In will not work with placeholder values")
+            return
+        }
         
         // Configure Google Sign-In with error handling
         do {
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
-            print("✓ GIDSignIn configured successfully")
         } catch {
             print("ERROR: Failed to configure GIDSignIn: \(error)")
         }
-        
-        print("=== End Google Sign-In Configuration Debug ===")
     }
     
     private func checkURLSchemes() {
-        print("Checking URL schemes in Info.plist...")
-        
-        // Check which Info.plist is being used
-        if let infoPlistPath = Bundle.main.path(forResource: "Info", ofType: "plist") {
-            print("Info.plist path: \(infoPlistPath)")
-        } else {
-            print("ERROR: Could not find Info.plist path")
-        }
-        
-        // Check the actual info dictionary
-        if let infoDictionary = Bundle.main.infoDictionary {
-            print("Info dictionary keys: \(infoDictionary.keys)")
-            
-            if let urlTypes = infoDictionary["CFBundleURLTypes"] as? [[String: Any]] {
-                print("Found \(urlTypes.count) URL types:")
-                for (index, urlType) in urlTypes.enumerated() {
-                    if let schemes = urlType["CFBundleURLSchemes"] as? [String] {
-                        print("  URL Type \(index): \(schemes)")
-                        
-                        // Check if the Google URL scheme is present
-                        let expectedScheme = "com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub"
-                        if schemes.contains(expectedScheme) {
-                            print("✓ Found Google URL scheme: \(expectedScheme)")
-                        } else {
-                            print("✗ Missing Google URL scheme: \(expectedScheme)")
-                        }
-                    }
-                }
-            } else {
-                print("ERROR: No URL types found in Info.plist")
-                print("Available keys in info dictionary: \(infoDictionary.keys)")
-            }
-        } else {
-            print("ERROR: Could not access info dictionary")
-        }
-        
-        // Also check if the URL scheme can be handled
-        let expectedScheme = "com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub"
-        if let url = URL(string: "\(expectedScheme)://test") {
-            if UIApplication.shared.canOpenURL(url) {
-                print("✓ URL scheme can be opened: \(expectedScheme)")
-            } else {
-                print("✗ URL scheme cannot be opened: \(expectedScheme)")
-            }
+        // Check if the Google URL scheme is present
+        let clientId = AppEnvironment.googleClientId
+        if clientId.hasPrefix("YOUR_") {
+            print("⚠️  Using placeholder client ID: \(clientId)")
+            print("   Please set GOOGLE_CLIENT_ID environment variable")
         }
     }
     
     // MARK: - Authentication
     
     func authenticateWithGoogle(for service: IntegrationService) async throws -> OAuthCredentials {
+        // Check if Google Sign-In is properly configured
+        let clientId = AppEnvironment.googleClientId
+        if clientId.hasPrefix("YOUR_") {
+            throw AuthenticationError.invalidConfiguration
+        }
+        
         // Note: Google Sign-In SDK automatically handles scope requests
         // The scope is determined by the Google Cloud Console OAuth client configuration
         // and the APIs that are enabled for your project
@@ -211,7 +174,7 @@ class GoogleSignInService: ObservableObject {
             return "https://www.googleapis.com/auth/spreadsheets"
         case "Google Drive":
             return "https://www.googleapis.com/auth/drive"
-        case "Gmail":
+        case "Google Gmail":
             return "https://www.googleapis.com/auth/gmail.modify"
         default:
             return nil

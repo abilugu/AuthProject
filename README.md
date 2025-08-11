@@ -2,6 +2,22 @@
 
 A comprehensive iOS application built with SwiftUI and MVVM architecture that demonstrates real OAuth 2.0 and API key authentication for multiple third-party services.
 
+## 🎥 Video Demonstration
+
+![AuthProject Demo](demo/AuthProject-Demo.mp4)
+
+**Watch the full demonstration** to see the Integration Authentication Platform in action:
+
+- 🔐 **OAuth 2.0 Authentication Flow** - Connect to Google and Microsoft services
+- 🔑 **API Key Management** - Add and validate SendGrid and Twilio credentials  
+- 🛡️ **Secure Storage** - View encrypted credentials with AES-256-GCM
+- 📊 **Credential Export** - Export all credentials to Google Sheets
+- 🎯 **Real-time Validation** - Test connection status and token refresh
+
+*The demo video shows the complete authentication flow and security features in action*
+
+**📁 Video File**: `demo/AuthProject-Demo.mp4`
+
 ## Features
 
 ### 🔐 Authentication Methods
@@ -38,29 +54,26 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
 
 ### Environment Configuration
 
-1. **Create Environment File**
-   Create a `.env` file in the project root:
+1. **Set Environment Variables in Xcode**
+   - Open the project in Xcode
+   - Select the **AuthProject** target
+   - Go to **Product** → **Scheme** → **Edit Scheme**
+   - Select **Run** on the left sidebar
+   - Go to the **Arguments** tab
+   - Under **Environment Variables**, click the **+** button and add:
 
-   ```bash
-   # Google OAuth
-   GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-   
-   # Microsoft OAuth  
-   MICROSOFT_CLIENT_ID=your-microsoft-client-id
-   MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
-   
-   # API Keys
-   SENDGRID_API_KEY=your-sendgrid-api-key
-   TWILIO_API_KEY=your-twilio-api-key
+   ```
+   GOOGLE_CLIENT_ID = your-google-client-id.apps.googleusercontent.com
+   MICROSOFT_CLIENT_ID = your-microsoft-client-id
+   MICROSOFT_CLIENT_SECRET = your-microsoft-client-secret
+   SENDGRID_API_KEY = your-sendgrid-api-key
+   TWILIO_API_KEY = your-twilio-api-key
+   TWILIO_ACCOUNT_SID = your-twilio-account-sid
    ```
 
-2. **Load Environment Variables**
-   ```bash
-   source load_env.sh
-   ```
+2. **OAuth Configuration**
 
-3. **OAuth Configuration**
-   ## 🔧 **Step 2: Google OAuth Setup**
+## 🔧 **Step 2: Google OAuth Setup**
 
 ### **3.1 Create Google Cloud Project**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -70,6 +83,7 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - Google Sheets API
    - Google Drive API
    - Gmail API
+   - **Google Sheets API** (for credential export functionality)
 
 ### **3.2 Configure OAuth Consent Screen**
 1. Go to "APIs & Services" → "OAuth consent screen"
@@ -83,6 +97,7 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - `https://www.googleapis.com/auth/spreadsheets`
    - `https://www.googleapis.com/auth/drive`
    - `https://www.googleapis.com/auth/gmail.modify`
+   - `https://www.googleapis.com/auth/spreadsheets` (for credential export)
 
 ### **3.3 Create OAuth 2.0 Credentials**
 1. Go to "APIs & Services" → "Credentials"
@@ -92,7 +107,7 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
 5. Copy the Client ID
 
 ### **3.4 Update Configuration**
-1. Update your `.env` file with the Google Client ID
+1. Add the Google Client ID to your Xcode environment variables
 2. The app uses Google Sign-In SDK which handles OAuth automatically
 3. No need to configure redirect URIs manually
 
@@ -121,11 +136,11 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
 3. Copy the Application (client) ID and Client Secret Value (not the ID)
 
 ### **4.4 Update Configuration**
-Update your `.env` file with the Microsoft credentials:
+Add the Microsoft credentials to your Xcode environment variables:
 
-```bash
-MICROSOFT_CLIENT_ID=your-actual-microsoft-client-id
-MICROSOFT_CLIENT_SECRET=your-actual-microsoft-client-secret-value
+```
+MICROSOFT_CLIENT_ID = your-actual-microsoft-client-id
+MICROSOFT_CLIENT_SECRET = your-actual-microsoft-client-secret-value
 ```
 
 ## Security Implementation
@@ -137,6 +152,6 @@ MICROSOFT_CLIENT_SECRET=your-actual-microsoft-client-secret-value
 - **Key Management**: Automatic generation and storage in Keychain
 
 ### Environment Variables
-- Client IDs and secrets loaded from environment variables
-- Fallback values provided for development
+- Client IDs and secrets loaded from Xcode scheme environment variables
 - No hardcoded secrets in source code
+- Secure credential management for development and production

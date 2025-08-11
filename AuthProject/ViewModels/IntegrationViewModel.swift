@@ -22,15 +22,14 @@ class IntegrationViewModel: ObservableObject {
         services = [
             // Google Services
             IntegrationService(name: "Google Calendar", icon: "calendar", authenticationType: .oauth),
+            IntegrationService(name: "Google Sheets", icon: "tablecells", authenticationType: .oauth),
             IntegrationService(name: "Google Drive", icon: "folder", authenticationType: .oauth),
             IntegrationService(name: "Google Gmail", icon: "envelope", authenticationType: .oauth),
-            IntegrationService(name: "Google Analytics", icon: "chart.bar", authenticationType: .oauth),
             
             // Microsoft Services
-            IntegrationService(name: "Microsoft Calendar", icon: "calendar", authenticationType: .oauth),
-            IntegrationService(name: "Microsoft OneDrive", icon: "folder", authenticationType: .oauth),
-            IntegrationService(name: "Microsoft Outlook", icon: "envelope", authenticationType: .oauth),
-            IntegrationService(name: "Microsoft Teams", icon: "message", authenticationType: .oauth),
+            IntegrationService(name: "Office 365 Calendar", icon: "calendar", authenticationType: .oauth),
+            IntegrationService(name: "Office 365 Mail", icon: "envelope", authenticationType: .oauth),
+            IntegrationService(name: "OneDrive", icon: "folder", authenticationType: .oauth),
             
             // Social Media Services
             IntegrationService(name: "Instagram", icon: "camera", authenticationType: .oauth),
