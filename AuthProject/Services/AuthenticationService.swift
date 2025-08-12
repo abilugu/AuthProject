@@ -240,7 +240,7 @@ class AuthenticationService: NSObject, ObservableObject {
         return newCredentials
     }
     
-    // MARK: - API Key Authentication (unchanged)
+    // MARK: - API Key Authentication
     
     func authenticateWithAPIKey(for service: IntegrationService, apiKey: String) async throws -> APIKeyCredentials {
         // Validate API key format (basic validation)
@@ -254,7 +254,11 @@ class AuthenticationService: NSObject, ObservableObject {
         // For demo purposes, we'll accept any non-empty API key
         let credentials = APIKeyCredentials(
             apiKey: apiKey,
-            additionalData: ["validated_at": ISO8601DateFormatter().string(from: Date())]
+            additionalData: [
+                "validated_at": ISO8601DateFormatter().string(from: Date()),
+                "service": service.name,
+                "demo_mode": "true"
+            ]
         )
         
         return credentials

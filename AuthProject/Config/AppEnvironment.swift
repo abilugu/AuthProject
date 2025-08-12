@@ -1,66 +1,30 @@
 import Foundation
 
-enum AppEnvironment {
-    // MARK: - Google OAuth
+struct AppEnvironment {
+    // MARK: - Google Services
     static let googleClientId: String = {
-        let value = ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  GOOGLE_CLIENT_ID not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_GOOGLE_CLIENT_ID"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["GOOGLE_CLIENT_ID"] ?? "YOUR_GOOGLE_CLIENT_ID"
     }()
     
-    // MARK: - Microsoft OAuth
+    // MARK: - Microsoft Services
     static let microsoftClientId: String = {
-        let value = ProcessInfo.processInfo.environment["MICROSOFT_CLIENT_ID"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  MICROSOFT_CLIENT_ID not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_MICROSOFT_CLIENT_ID"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["MICROSOFT_CLIENT_ID"] ?? "YOUR_MICROSOFT_CLIENT_ID"
     }()
     
     static let microsoftClientSecret: String = {
-        let value = ProcessInfo.processInfo.environment["MICROSOFT_CLIENT_SECRET"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  MICROSOFT_CLIENT_SECRET not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_MICROSOFT_CLIENT_SECRET"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["MICROSOFT_CLIENT_SECRET"] ?? "YOUR_MICROSOFT_CLIENT_SECRET"
     }()
     
-    // MARK: - API Keys
+    // MARK: - API Key Services
     static let sendGridApiKey: String = {
-        let value = ProcessInfo.processInfo.environment["SENDGRID_API_KEY"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  SENDGRID_API_KEY not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_SENDGRID_API_KEY"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["SENDGRID_API_KEY"] ?? "YOUR_SENDGRID_API_KEY"
     }()
     
     static let twilioApiKey: String = {
-        let value = ProcessInfo.processInfo.environment["TWILIO_API_KEY"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  TWILIO_API_KEY not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_TWILIO_API_KEY"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["TWILIO_API_KEY"] ?? "YOUR_TWILIO_API_KEY"
     }()
     
     static let twilioAccountSid: String = {
-        let value = ProcessInfo.processInfo.environment["TWILIO_ACCOUNT_SID"]
-        if value == nil || value?.isEmpty == true {
-            print("⚠️  TWILIO_ACCOUNT_SID not set in environment variables")
-            print("   Please set it in Xcode Scheme → Run → Arguments → Environment Variables")
-            return "YOUR_TWILIO_ACCOUNT_SID"
-        }
-        return value!
+        return ProcessInfo.processInfo.environment["TWILIO_ACCOUNT_SID"] ?? "YOUR_TWILIO_ACCOUNT_SID"
     }()
 } 

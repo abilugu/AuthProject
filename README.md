@@ -143,6 +143,51 @@ MICROSOFT_CLIENT_ID = your-actual-microsoft-client-id
 MICROSOFT_CLIENT_SECRET = your-actual-microsoft-client-secret-value
 ```
 
+## 🔧 **Step 12: SendGrid API Key Setup**
+
+### **12.1 Create SendGrid Account**
+1. Go to [SendGrid](https://sendgrid.com/) and create an account
+2. Verify your email address
+3. Complete account setup
+
+### **12.2 Generate API Key**
+1. Go to "Settings" → "API Keys"
+2. Click "Create API Key"
+3. Choose "Full Access" or "Restricted Access" with appropriate permissions:
+   - Mail Send
+   - User Profile Read
+4. Copy the generated API key (starts with `SG.`)
+
+### **12.3 Update Configuration**
+Add to your Xcode environment variables:
+```
+SENDGRID_API_KEY = SG.your-actual-sendgrid-api-key
+```
+
+## 🔧 **Step 13: Twilio API Key Setup**
+
+### **13.1 Create Twilio Account**
+1. Go to [Twilio](https://www.twilio.com/) and create an account
+2. Verify your phone number
+3. Complete account setup
+
+### **13.2 Get Account SID**
+1. Go to "Console" → "Dashboard"
+2. Copy your Account SID (starts with `AC`)
+
+### **13.3 Generate API Key**
+1. Go to "Console" → "API Keys & Tokens"
+2. Click "Create API Key"
+3. Choose "Standard" or "Restricted" with appropriate permissions
+4. Copy the generated API Key Secret
+
+### **13.4 Update Configuration**
+Add to your Xcode environment variables:
+```
+TWILIO_ACCOUNT_SID = ACyour-actual-twilio-account-sid
+TWILIO_API_KEY = your-actual-twilio-api-key-secret
+```
+
 ## Security Implementation
 
 ### Storage Architecture

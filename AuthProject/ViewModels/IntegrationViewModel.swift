@@ -59,22 +59,43 @@ class IntegrationViewModel: ObservableObject {
                 try storageService.saveCredentials(for: service, credentials: credentials)
                 
             case .apiKey:
-                // For demo purposes, generate a mock API key
-                let mockApiKey = "sk_\(UUID().uuidString.replacingOccurrences(of: "-", with: ""))"
-                let apiKeyCredentials = APIKeyCredentials(
-                    apiKey: mockApiKey,
-                    additionalData: [
-                        "service": service.name,
-                        "created_at": ISO8601DateFormatter().string(from: Date())
-                    ]
-                )
-                try storageService.saveCredentials(for: service, credentials: apiKeyCredentials)
+                // For API key services, we need to prompt the user for their API key
+                // This will be handled by the UI layer
+                throw AuthenticationError.invalidAPIKey
             }
             
             await loadStoredServices()
             updateConnectionStatuses()
             
         } catch {
+            errorMessage = error.localizedDescription
+        }
+        
+        isLoading = false
+    }
+    
+    func connectWithAPIKey(_ service: IntegrationService, apiKey: String) async {
+        print("🔗 Connecting to \(service.name) with API key...")
+        print("🔍 Service details: name='\(service.name)', type=\(service.authenticationType)")
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let credentials = try await authenticationService.authenticateWithAPIKey(for: service, apiKey: apiKey)
+            print("✅ API key validation successful for \(service.name)")
+            try storageService.saveCredentials(for: service, credentials: credentials)
+            print("💾 Credentials saved for \(service.name)")
+            
+            await loadStoredServices()
+            updateConnectionStatuses()
+            
+        } catch let error as AuthenticationError {
+            print("❌ Authentication error for \(service.name): \(error)")
+            print("   Error description: \(error.localizedDescription)")
+            errorMessage = error.localizedDescription
+        } catch {
+            print("❌ Unexpected error for \(service.name): \(error)")
+            print("   Error type: \(type(of: error))")
             errorMessage = error.localizedDescription
         }
         
