@@ -191,6 +191,26 @@ struct APIKeyInputView: View {
     let onConnect: () -> Void
     let onCancel: () -> Void
     
+    private var isTwilio: Bool {
+        serviceName == "Twilio"
+    }
+    
+    private var placeholderText: String {
+        if isTwilio {
+            return "AccountSID:AuthToken"
+        } else {
+            return "API Key"
+        }
+    }
+    
+    private var instructionText: String {
+        if isTwilio {
+            return "Enter your Twilio Account SID and Auth Token in this format:\nAccountSID:AuthToken"
+        } else {
+            return "Please enter your \(serviceName) API key:"
+        }
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
@@ -198,13 +218,31 @@ struct APIKeyInputView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                 
-                Text("Please enter your \(serviceName) API key:")
+                Text(instructionText)
                     .font(.body)
                     .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
                 
-                TextField("API Key", text: $apiKey)
+                if isTwilio {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Format:")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("AccountSID:AuthToken")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .padding(8)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                    .padding(.horizontal)
+                }
+                
+                TextField(placeholderText, text: $apiKey)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
                 
                 HStack(spacing: 16) {
                     Button("Cancel") {

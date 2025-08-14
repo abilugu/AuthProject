@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 class OAuthConfigurationManager {
     static let shared = OAuthConfigurationManager()
@@ -30,6 +31,32 @@ class OAuthConfigurationManager {
                 redirectURI: "authproject://oauth/callback",
                 isPublicClient: true
             )
+        case "Instagram":
+            // Temporarily disabled due to Facebook OAuth redirect issues
+            // TODO: Implement Instagram OAuth with a different approach
+            return nil
+        case "TikTok":
+            return OAuthConfig(
+                clientId: AppEnvironment.tiktokClientId,
+                clientSecret: AppEnvironment.tiktokClientSecret,
+                authorizationURL: URL(string: "https://www.tiktok.com/v2/auth/authorize")!,
+                tokenURL: URL(string: "https://open.tiktokapis.com/v2/oauth/token/")!,
+                callbackScheme: "https",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "https://localhost/oauth/callback",
+                isPublicClient: false
+            )
+        case "X (Twitter)":
+            return OAuthConfig(
+                clientId: AppEnvironment.twitterClientId,
+                clientSecret: AppEnvironment.twitterClientSecret,
+                authorizationURL: URL(string: "https://x.com/i/oauth2/authorize")!,
+                tokenURL: URL(string: "https://api.x.com/2/oauth2/token")!,
+                callbackScheme: "authproject",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "authproject://oauth/callback",
+                isPublicClient: false  // Match Android app configuration
+            )
         default:
             return nil
         }
@@ -51,6 +78,12 @@ class OAuthConfigurationManager {
             return ["https://graph.microsoft.com/Mail.Send", "offline_access"]
         case let name where name.contains("OneDrive"):
             return ["https://graph.microsoft.com/Files.ReadWrite", "offline_access"]
+        case "Instagram":
+            return ["instagram_basic", "instagram_content_publish", "pages_show_list"]
+        case "TikTok":
+            return ["user.info.basic", "user.info.profile", "user.info.stats", "video.list", "video.upload"]
+        case "X (Twitter)":
+            return ["tweet.read", "users.read", "offline.access"]
         default:
             return []
         }
@@ -59,15 +92,40 @@ class OAuthConfigurationManager {
     func generateAuthorizationURL(for config: OAuthConfig, state: String) -> URL {
         var components = URLComponents(url: config.authorizationURL, resolvingAgainstBaseURL: false)!
         
-        components.queryItems = [
+        // Use authorization code flow for all services (including Twitter)
+        let responseType = "code"
+        
+        var queryItems = [
             URLQueryItem(name: "client_id", value: config.clientId),
             URLQueryItem(name: "redirect_uri", value: config.redirectURI),
-            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "response_type", value: responseType),
             URLQueryItem(name: "scope", value: config.scopes.joined(separator: " ")),
-            URLQueryItem(name: "state", value: state),
-            URLQueryItem(name: "access_type", value: "offline"),
-            URLQueryItem(name: "prompt", value: "consent")
+            URLQueryItem(name: "state", value: state)
         ]
+        
+        // Add PKCE for public clients (but not for Twitter to match Android app)
+        if config.isPublicClient && !config.clientId.contains("twitter") && !config.clientId.contains("U3VYT1NISkt4WnhHUWc1SUdmeWw6MTpjaQ") {
+            let codeVerifier = generateCodeVerifier()
+            let codeChallenge = generateCodeChallenge(from: codeVerifier)
+            
+            // Store code verifier for later use in token exchange
+            UserDefaults.standard.set(codeVerifier, forKey: "pkce_code_verifier_\(state)")
+            
+            queryItems.append(contentsOf: [
+                URLQueryItem(name: "code_challenge", value: codeChallenge),
+                URLQueryItem(name: "code_challenge_method", value: "S256")
+            ])
+        }
+        
+        components.queryItems = queryItems
+        
+        // Only add these for Google services (not Twitter)
+        if config.clientId.contains("googleusercontent") {
+            components.queryItems?.append(contentsOf: [
+                URLQueryItem(name: "access_type", value: "offline"),
+                URLQueryItem(name: "prompt", value: "consent")
+            ])
+        }
         
         return components.url!
     }
@@ -99,5 +157,33 @@ class OAuthConfigurationManager {
         }
         
         return nil
+    }
+    
+    // MARK: - PKCE Helper Methods
+    
+    private func generateCodeVerifier() -> String {
+        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+        let length = 128
+        var codeVerifier = ""
+        
+        for _ in 0..<length {
+            let randomIndex = Int.random(in: 0..<characters.count)
+            let character = characters[characters.index(characters.startIndex, offsetBy: randomIndex)]
+            codeVerifier.append(character)
+        }
+        
+        return codeVerifier
+    }
+    
+    private func generateCodeChallenge(from codeVerifier: String) -> String {
+        guard let data = codeVerifier.data(using: .utf8) else {
+            return codeVerifier
+        }
+        
+        let hash = SHA256.hash(data: data)
+        return Data(hash).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
     }
 } 

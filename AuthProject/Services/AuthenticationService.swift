@@ -15,11 +15,14 @@ class AuthenticationService: NSObject, ObservableObject {
     // MARK: - OAuth Authentication
     
     func authenticateWithOAuth(for service: IntegrationService) async throws -> OAuthCredentials {
+        print("🔧 Main OAuth: Starting for service: '\(service.name)'")
+        
         // For Google services with sensitive scopes, consider using Google Sign-In SDK
         // which handles the OAuth flow more reliably for iOS apps
         
         // Use Google Sign-In for Google services
         if service.name.contains("Google") {
+            print("🔧 Main OAuth: Using Google Sign-In for: \(service.name)")
             // Check if we have a valid Google client ID
             let clientId = AppEnvironment.googleClientId
             if clientId.hasPrefix("YOUR_") {
@@ -28,8 +31,28 @@ class AuthenticationService: NSObject, ObservableObject {
             return try await googleSignInService.authenticateWithGoogle(for: service)
         }
         
+        // Special handling for Instagram (Facebook OAuth) - temporarily disabled
+        // if service.name == "Instagram" {
+        //     return try await authenticateWithFacebookOAuth(for: service)
+        // }
+        
+        // Special handling for TikTok OAuth
+        if service.name == "TikTok" {
+            print("🔧 Main OAuth: Using TikTok OAuth for: \(service.name)")
+            return try await authenticateWithTikTokOAuth(for: service)
+        }
+        
+        // Special handling for X (Twitter) OAuth
+        if service.name == "X (Twitter)" {
+            print("🔧 Main OAuth: Using Twitter OAuth for: \(service.name)")
+            return try await authenticateWithTwitterOAuth(for: service)
+        }
+        
+        print("🔧 Main OAuth: Using generic OAuth for: \(service.name)")
+        
         // Use web OAuth for other services (Microsoft, etc.)
         guard let oauthConfig = configManager.getOAuthConfig(for: service.name) else {
+            print("❌ Main OAuth: No OAuth config found for service: \(service.name)")
             throw AuthenticationError.oauthFailed
         }
         
@@ -115,7 +138,8 @@ class AuthenticationService: NSObject, ObservableObject {
                     do {
                         let tokens = try await self.exchangeAuthCodeForTokens(
                             authCode: authCode,
-                            config: oauthConfig
+                            config: oauthConfig,
+                            state: state
                         )
                         continuation.resume(returning: tokens)
                     } catch {
@@ -131,7 +155,7 @@ class AuthenticationService: NSObject, ObservableObject {
         }
     }
     
-    private func exchangeAuthCodeForTokens(authCode: String, config: OAuthConfig) async throws -> OAuthCredentials {
+    private func exchangeAuthCodeForTokens(authCode: String, config: OAuthConfig, state: String? = nil) async throws -> OAuthCredentials {
         var requestBody: [String: String] = [
             "grant_type": "authorization_code",
             "code": authCode,
@@ -146,6 +170,20 @@ class AuthenticationService: NSObject, ObservableObject {
         
         // Always send client_id
         requestBody["client_id"] = config.clientId
+        
+        // Add PKCE code verifier for public clients
+        if config.isPublicClient {
+            // Try to get the stored code verifier using state
+            if let state = state {
+                let storedCodeVerifier = UserDefaults.standard.string(forKey: "pkce_code_verifier_\(state)")
+                if let codeVerifier = storedCodeVerifier {
+                    requestBody["code_verifier"] = codeVerifier
+                    print("🔧 PKCE: Added code verifier to token exchange")
+                    // Clean up the stored code verifier
+                    UserDefaults.standard.removeObject(forKey: "pkce_code_verifier_\(state)")
+                }
+            }
+        }
         
         let url = config.tokenURL
         var request = URLRequest(url: url)
@@ -248,7 +286,12 @@ class AuthenticationService: NSObject, ObservableObject {
             throw AuthenticationError.invalidAPIKey
         }
         
-        // Simulate API key validation
+        // Special handling for Twilio (Account SID + Auth Token)
+        if service.name == "Twilio" {
+            return try await authenticateWithTwilio(apiKey: apiKey)
+        }
+        
+        // Simulate API key validation for other services
         try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         
         // For demo purposes, we'll accept any non-empty API key
@@ -262,6 +305,91 @@ class AuthenticationService: NSObject, ObservableObject {
         )
         
         return credentials
+    }
+    
+    // MARK: - Twilio Authentication
+    
+    private func authenticateWithTwilio(apiKey: String) async throws -> APIKeyCredentials {
+        // Parse the API key (should be in format "AccountSID:AuthToken")
+        let components = apiKey.components(separatedBy: ":")
+        guard components.count == 2 else {
+            throw AuthenticationError.twilioInvalidFormat
+        }
+        
+        let accountSid = components[0].trimmingCharacters(in: .whitespacesAndNewlines)
+        let authToken = components[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Validate Account SID format (should start with AC)
+        guard accountSid.hasPrefix("AC") && accountSid.count >= 32 else {
+            throw AuthenticationError.twilioInvalidCredentials
+        }
+        
+        // Validate Auth Token format (should be 32 characters)
+        guard authToken.count >= 32 else {
+            throw AuthenticationError.twilioInvalidCredentials
+        }
+        
+        // Make a real API call to validate credentials
+        let url = URL(string: "https://api.twilio.com/2010-04-01/Accounts/\(accountSid).json")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        // Add Basic Auth header
+        let credentials = "\(accountSid):\(authToken)"
+        guard let credentialsData = credentials.data(using: .utf8) else {
+            throw AuthenticationError.invalidAPIKey
+        }
+        let base64Credentials = credentialsData.base64EncodedString()
+        request.setValue("Basic \(base64Credentials)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthenticationError.networkError
+            }
+            
+            if httpResponse.statusCode == 200 {
+                // Successfully authenticated
+                // Parse the response to get account details
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let accountName = json["friendly_name"] as? String {
+                    
+                    return APIKeyCredentials(
+                        apiKey: apiKey,
+                        additionalData: [
+                            "account_sid": accountSid,
+                            "auth_token": authToken,
+                            "account_name": accountName,
+                            "validated_at": ISO8601DateFormatter().string(from: Date()),
+                            "service": "Twilio"
+                        ]
+                    )
+                } else {
+                    // Still valid even if we can't parse the response
+                    return APIKeyCredentials(
+                        apiKey: apiKey,
+                        additionalData: [
+                            "account_sid": accountSid,
+                            "auth_token": authToken,
+                            "validated_at": ISO8601DateFormatter().string(from: Date()),
+                            "service": "Twilio"
+                        ]
+                    )
+                }
+            } else {
+                // Handle specific Twilio error codes
+                if httpResponse.statusCode == 401 {
+                    throw AuthenticationError.twilioInvalidCredentials
+                } else if httpResponse.statusCode == 404 {
+                    throw AuthenticationError.twilioInvalidCredentials
+                } else {
+                    throw AuthenticationError.networkError
+                }
+            }
+        } catch {
+            throw AuthenticationError.networkError
+        }
     }
     
     func revokeOAuthTokens(for service: IntegrationService) async throws {
@@ -329,6 +457,161 @@ class AuthenticationService: NSObject, ObservableObject {
         }
         
         return try await authenticateWithOAuth(for: service)
+    }
+    
+    // MARK: - TikTok OAuth
+    
+    private func authenticateWithTikTokOAuth(for service: IntegrationService) async throws -> OAuthCredentials {
+        guard let oauthConfig = configManager.getOAuthConfig(for: service.name) else {
+            throw AuthenticationError.oauthFailed
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let state = UUID().uuidString
+            let authorizationURL = configManager.generateAuthorizationURL(for: oauthConfig, state: state)
+            
+            // Use https scheme to handle localhost redirect
+            let session = ASWebAuthenticationSession(
+                url: authorizationURL,
+                callbackURLScheme: "https"
+            ) { callbackURL, error in
+                if let error = error {
+                    print("TikTok OAuth error: \(error)")
+                    continuation.resume(throwing: AuthenticationError.oauthFailed)
+                    return
+                }
+                
+                guard let callbackURL = callbackURL else {
+                    print("No callback URL received from TikTok OAuth")
+                    continuation.resume(throwing: AuthenticationError.oauthCancelled)
+                    return
+                }
+                
+                print("Received TikTok callback URL: \(callbackURL)")
+                
+                // Check if this is the localhost redirect with authorization code
+                if callbackURL.host == "localhost" {
+                    // Extract authorization code from localhost URL
+                    guard let authCode = self.configManager.extractAuthCode(from: callbackURL) else {
+                        print("Failed to extract auth code from localhost callback URL")
+                        continuation.resume(throwing: AuthenticationError.invalidResponse)
+                        return
+                    }
+                    
+                    print("Successfully extracted auth code from localhost redirect")
+                    
+                    // Exchange auth code for tokens
+                    Task {
+                        do {
+                            let tokens = try await self.exchangeAuthCodeForTokens(
+                                authCode: authCode,
+                                config: oauthConfig,
+                                state: state
+                            )
+                            continuation.resume(returning: tokens)
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                    return
+                }
+                
+                // Fallback: Try to extract authorization code from any callback URL
+                guard let authCode = self.configManager.extractAuthCode(from: callbackURL) else {
+                    print("Failed to extract auth code from TikTok callback URL")
+                    continuation.resume(throwing: AuthenticationError.invalidResponse)
+                    return
+                }
+                
+                print("Fallback: extracted auth code from TikTok OAuth")
+                
+                // Exchange auth code for tokens
+                Task {
+                    do {
+                        let tokens = try await self.exchangeAuthCodeForTokens(
+                            authCode: authCode,
+                            config: oauthConfig,
+                            state: state
+                        )
+                        continuation.resume(returning: tokens)
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            
+            session.presentationContextProvider = self
+            session.prefersEphemeralWebBrowserSession = false
+            session.start()
+        }
+    }
+    
+    // MARK: - X (Twitter) OAuth
+    
+    private func authenticateWithTwitterOAuth(for service: IntegrationService) async throws -> OAuthCredentials {
+        guard let oauthConfig = configManager.getOAuthConfig(for: service.name) else {
+            throw AuthenticationError.oauthFailed
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let state = UUID().uuidString
+            let authorizationURL = configManager.generateAuthorizationURL(for: oauthConfig, state: state)
+            
+            // Use custom URL scheme for proper iOS app behavior
+            let session = ASWebAuthenticationSession(
+                url: authorizationURL,
+                callbackURLScheme: oauthConfig.callbackScheme
+            ) { callbackURL, error in
+                if let error = error {
+                    // Handle specific error codes
+                    if let webAuthError = error as? ASWebAuthenticationSessionError {
+                        switch webAuthError.code {
+                        case .canceledLogin:
+                            continuation.resume(throwing: AuthenticationError.oauthCancelled)
+                        case .presentationContextNotProvided:
+                            continuation.resume(throwing: AuthenticationError.oauthFailed)
+                        case .presentationContextInvalid:
+                            continuation.resume(throwing: AuthenticationError.oauthFailed)
+                        @unknown default:
+                            continuation.resume(throwing: AuthenticationError.oauthFailed)
+                        }
+                    } else {
+                        continuation.resume(throwing: AuthenticationError.oauthFailed)
+                    }
+                    return
+                }
+                
+                guard let callbackURL = callbackURL else {
+                    continuation.resume(throwing: AuthenticationError.oauthCancelled)
+                    return
+                }
+                
+                // Extract authorization code from callback URL
+                guard let authCode = self.configManager.extractAuthCode(from: callbackURL) else {
+                    continuation.resume(throwing: AuthenticationError.invalidResponse)
+                    return
+                }
+                
+                // Exchange auth code for tokens
+                Task {
+                    do {
+                        let tokens = try await self.exchangeAuthCodeForTokens(
+                            authCode: authCode,
+                            config: oauthConfig,
+                            state: state
+                        )
+                        continuation.resume(returning: tokens)
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            
+            session.presentationContextProvider = self
+            session.prefersEphemeralWebBrowserSession = true // Force fresh session to clear any cached state
+            
+            session.start()
+        }
     }
     
     // MARK: - Token Validation
@@ -423,6 +706,8 @@ enum AuthenticationError: Error, LocalizedError {
     case invalidResponse
     case invalidConfiguration
     case tokenExchangeFailed
+    case twilioInvalidFormat
+    case twilioInvalidCredentials
     
     var errorDescription: String? {
         switch self {
@@ -440,6 +725,10 @@ enum AuthenticationError: Error, LocalizedError {
             return "Invalid OAuth configuration"
         case .tokenExchangeFailed:
             return "Failed to exchange authorization code for tokens"
+        case .twilioInvalidFormat:
+            return "Invalid Twilio credentials format. Expected: AccountSID:AuthToken"
+        case .twilioInvalidCredentials:
+            return "Invalid Twilio credentials. Please check your Account SID and Auth Token are correct and try again."
         }
     }
 } 

@@ -66,6 +66,12 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    GOOGLE_CLIENT_ID = your-google-client-id.apps.googleusercontent.com
    MICROSOFT_CLIENT_ID = your-microsoft-client-id
    MICROSOFT_CLIENT_SECRET = your-microsoft-client-secret
+   INSTAGRAM_CLIENT_ID = your-instagram-client-id
+   INSTAGRAM_CLIENT_SECRET = your-instagram-app-secret
+   TIKTOK_CLIENT_ID = your-tiktok-client-id
+   TIKTOK_CLIENT_SECRET = your-tiktok-client-secret
+   TWITTER_CLIENT_ID = your-twitter-client-id
+   TWITTER_CLIENT_SECRET = your-twitter-client-secret
    SENDGRID_API_KEY = your-sendgrid-api-key
    TWILIO_API_KEY = your-twilio-api-key
    TWILIO_ACCOUNT_SID = your-twilio-account-sid
@@ -73,9 +79,9 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
 
 2. **OAuth Configuration**
 
-## 🔧 **Step 2: Google OAuth Setup**
+## 🔧 **Step 1: Google OAuth Setup**
 
-### **3.1 Create Google Cloud Project**
+### **1.1 Create Google Cloud Project**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing one
 3. Enable the APIs you need:
@@ -85,7 +91,7 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - Gmail API
    - **Google Sheets API** (for credential export functionality)
 
-### **3.2 Configure OAuth Consent Screen**
+### **1.2 Configure OAuth Consent Screen**
 1. Go to "APIs & Services" → "OAuth consent screen"
 2. Choose "External" user type
 3. Fill in required information:
@@ -99,21 +105,21 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - `https://www.googleapis.com/auth/gmail.modify`
    - `https://www.googleapis.com/auth/spreadsheets` (for credential export)
 
-### **3.3 Create OAuth 2.0 Credentials**
+### **1.3 Create OAuth 2.0 Credentials**
 1. Go to "APIs & Services" → "Credentials"
 2. Click "Create Credentials" → "OAuth 2.0 Client IDs"
 3. **Choose "iOS" as application type** (not Web)
 4. Add your bundle identifier: `com.playground.AuthProject`
 5. Copy the Client ID
 
-### **3.4 Update Configuration**
+### **1.4 Update Configuration**
 1. Add the Google Client ID to your Xcode environment variables
 2. The app uses Google Sign-In SDK which handles OAuth automatically
 3. No need to configure redirect URIs manually
 
-## 🔧 **Step 4: Microsoft OAuth Setup**
+## 🔧 **Step 2: Microsoft OAuth Setup**
 
-### **4.1 Create Azure App Registration**
+### **2.1 Create Azure App Registration**
 1. Go to [Azure Portal](https://portal.azure.com/)
 2. Navigate to "Azure Active Directory" → "App registrations"
 3. Click "New registration"
@@ -122,7 +128,7 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - **Supported account types: "Accounts in any organizational directory and personal Microsoft accounts"**
    - Redirect URI: `authproject://oauth/callback`
 
-### **4.2 Configure API Permissions**
+### **2.2 Configure API Permissions**
 1. Go to "API permissions"
 2. Add permissions:
    - Microsoft Graph → Calendars.ReadWrite
@@ -130,12 +136,12 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
    - Microsoft Graph → Files.ReadWrite
 3. Grant admin consent
 
-### **4.3 Get Client Credentials**
+### **2.3 Get Client Credentials**
 1. Go to "Certificates & secrets"
 2. Create a new client secret
 3. Copy the Application (client) ID and Client Secret Value (not the ID)
 
-### **4.4 Update Configuration**
+### **2.4 Update Configuration**
 Add the Microsoft credentials to your Xcode environment variables:
 
 ```
@@ -143,50 +149,217 @@ MICROSOFT_CLIENT_ID = your-actual-microsoft-client-id
 MICROSOFT_CLIENT_SECRET = your-actual-microsoft-client-secret-value
 ```
 
-## 🔧 **Step 12: SendGrid API Key Setup**
+## 🔧 **Step 3: Instagram OAuth Setup**
 
-### **12.1 Create SendGrid Account**
-1. Go to [SendGrid](https://sendgrid.com/) and create an account
-2. Verify your email address
-3. Complete account setup
+**⚠️ Note: Instagram OAuth is temporarily disabled due to Facebook OAuth redirect URI issues. We're working on a different approach.**
 
-### **12.2 Generate API Key**
-1. Go to "Settings" → "API Keys"
-2. Click "Create API Key"
-3. Choose "Full Access" or "Restricted Access" with appropriate permissions:
-   - Mail Send
-   - User Profile Read
-4. Copy the generated API key (starts with `SG.`)
+### **3.1 Create Instagram App**
+1. Go to [Instagram Developer Portal](https://developers.facebook.com/apps/)
+2. Click "Add New App" or select an existing app
+3. **Important**: Choose **"Business"** app type (Instagram integration requires Business app type)
+4. Fill in details:
+   - App name: "AuthProject"
+   - Contact email: your email address
+   - Business account (required for Instagram integration)
 
-### **12.3 Update Configuration**
-Add to your Xcode environment variables:
+### **3.2 Configure Instagram Graph API**
+1. In your Facebook app dashboard, you should now see **"Add products to your app"** section
+2. Look for **"Instagram Graph API"** in the available products
+3. Click **"Set up"** next to Instagram Graph API
+4. You should see the Instagram API setup page with:
+   - Instagram app name: "AuthProject-IG"
+   - Instagram app ID: (your app ID)
+   - Instagram app secret: (your app secret)
+
+### **3.3 Set up Instagram Business Login**
+1. In the Instagram API setup page, scroll down to **"3. Set up Instagram business login"**
+2. Click on this section to configure OAuth
+3. Look for **"Valid OAuth Redirect URIs"** or **"Client OAuth Settings"**
+4. Add these redirect URIs:
+   - `authproject://oauth/callback`
+   - `com.playground.AuthProject://oauth/callback`
+5. **Important**: Also configure Facebook Login settings:
+   - Go back to your main app dashboard
+   - Look for **"Facebook Login"** in the left sidebar or in the "Add products to your app" section
+   - Click **"Set up"** next to Facebook Login if it's not already set up
+   - Go to **"Facebook Login"** → **"Settings"**
+   - Add this redirect URI in the **"Valid OAuth Redirect URIs"** field:
+     - `authproject://oauth/callback`
+   - **Note**: Using bundle identifier scheme to avoid web page loading entirely
+6. Save the configuration
+
+**Note**: Instagram Graph API uses Facebook's OAuth endpoints, so you need to configure redirect URIs in both Instagram and Facebook Login settings.
+
+### **3.4 Get Client Credentials**
+1. **Important**: Instagram Graph API requires a **Facebook App ID**, not an Instagram App ID
+2. Go to **"App Settings"** → **"Basic"** in your Facebook app
+3. Copy the **App ID** (this is your Facebook App ID for Instagram Graph API)
+4. Go back to the Instagram API setup page
+5. Copy the **Instagram app secret** (click to reveal)
+6. **Note**: The Instagram app ID shown in the Instagram API page is for Instagram-specific features, but OAuth uses the Facebook App ID
+
+### **3.5 Update Configuration**
+Add the Instagram credentials to your Xcode environment variables:
+
 ```
-SENDGRID_API_KEY = SG.your-actual-sendgrid-api-key
+INSTAGRAM_CLIENT_ID = your-facebook-app-id-from-app-settings
+INSTAGRAM_CLIENT_SECRET = your-instagram-app-secret
 ```
 
-## 🔧 **Step 13: Twilio API Key Setup**
+## 🔧 **Step 4: TikTok OAuth Setup**
 
-### **13.1 Create Twilio Account**
-1. Go to [Twilio](https://www.twilio.com/) and create an account
-2. Verify your phone number
-3. Complete account setup
+### **4.1 Create TikTok App**
+1. Go to [TikTok for Developers](https://developers.tiktok.com/)
+2. Sign in with your TikTok account
+3. **Look for "My Apps" or "Developer Dashboard"** in the top navigation
+4. **Click "Create App"** or **"Add App"** button (usually in the top right or center of the dashboard)
+5. If you don't see a create button, look for:
+   - **"Get Started"** button
+   - **"Create Your First App"** link
+   - **"Add New App"** option in a dropdown menu
+6. Fill in app details:
+   - App name: "AuthProject"
+   - App description: "Integration Authentication Platform"
+   - Platform: "Web App"
+   - Category: "Other"
+   - **Terms of Service URL**: You need your own company terms of service URL
+   - **Privacy Policy URL**: You need your own company privacy policy URL
+   - **Note**: TikTok requires you to own the domains for these URLs and may require verification file uploads
 
-### **13.2 Get Account SID**
-1. Go to "Console" → "Dashboard"
-2. Copy your Account SID (starts with `AC`)
+### **4.2 Configure OAuth Settings**
+1. In your TikTok app dashboard, go to **"App Management"** → **"OAuth"**
+2. Add these redirect URIs:
+   - `https://localhost/oauth/callback`
+   - `http://localhost/oauth/callback`
+3. Save the configuration
 
-### **13.3 Generate API Key**
-1. Go to "Console" → "API Keys & Tokens"
-2. Click "Create API Key"
-3. Choose "Standard" or "Restricted" with appropriate permissions
-4. Copy the generated API Key Secret
+### **4.3 Get Client Credentials**
+1. Go to **"App Management"** → **"Basic Info"**
+2. Copy the **Client Key** (this is your Client ID)
+3. Copy the **Client Secret**
+4. **Note**: Keep these credentials secure
 
-### **13.4 Update Configuration**
-Add to your Xcode environment variables:
+### **4.4 Update Configuration**
+Add the TikTok credentials to your Xcode environment variables:
+
 ```
-TWILIO_ACCOUNT_SID = ACyour-actual-twilio-account-sid
-TWILIO_API_KEY = your-actual-twilio-api-key-secret
+TIKTOK_CLIENT_ID = your-actual-tiktok-client-key
+TIKTOK_CLIENT_SECRET = your-actual-tiktok-client-secret
 ```
+
+## 🔧 **Step 5: X (Twitter) OAuth Setup**
+
+### **5.1 Create Twitter App**
+1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+2. Create a new app or select an existing one
+3. Go to **"App Settings"** → **"User authentication settings"**
+4. Enable **"OAuth 2.0"**
+5. Set **"App permissions"** to **"Read and Write"**
+6. **Add this callback URL**:
+   ```
+   authproject://oauth/callback
+   ```
+7. **Remove ALL other callback URLs** to avoid conflicts
+8. Save the configuration
+
+### **5.2.1 Troubleshooting Twitter OAuth**
+
+**Common Issues & Solutions:**
+
+1. **"Invalid redirect URI" error**:
+   - ✅ **Solution**: Use exactly `authproject://oauth/callback` in Twitter app settings
+   - ❌ **Don't use**: `authproject://oauth2redirect` or any other variations
+
+2. **"OAuth authentication was cancelled"**:
+   - ✅ **Solution**: Check that your Twitter app has the correct callback URL
+   - ✅ **Solution**: Ensure "Read and Write" permissions are enabled
+   - ✅ **Solution**: Remove ALL other callback URLs from your Twitter app
+
+3. **"Token exchange failed"**:
+   - ✅ **Solution**: Verify your Twitter Client ID and Secret are correct
+   - ✅ **Solution**: Check that your app is configured as "Web App, Automated App or Bot"
+
+4. **"No callback URL received"**:
+   - ✅ **Solution**: Ensure the URL scheme `authproject` is registered in Info.plist
+   - ✅ **Solution**: Check that ASWebAuthenticationSession is properly configured
+
+### **5.2.2 Twitter OAuth Debugging Checklist**
+
+**Before Testing:**
+- [ ] Twitter app has OAuth 2.0 enabled
+- [ ] App permissions set to "Read and Write"
+- [ ] Callback URL: `authproject://oauth/callback` (exactly this)
+- [ ] All other callback URLs removed
+- [ ] Client ID and Secret are correct in environment variables
+- [ ] App type is "Web App, Automated App or Bot"
+
+**During Testing:**
+- [ ] Check console logs for detailed OAuth flow
+- [ ] Verify authorization URL is generated correctly
+- [ ] Confirm callback URL is received
+- [ ] Validate token exchange response
+
+**Expected Flow:**
+1. User taps "Connect" for X (Twitter)
+2. Twitter OAuth page opens in Safari
+3. User authorizes the app
+4. App receives callback with authorization code
+5. App exchanges code for access token
+6. Credentials are stored securely
+
+### **5.3 Get Client Credentials**
+1. Go to **"Keys and tokens"** tab
+2. Copy the **OAuth 2.0 Client ID**
+3. Copy the **OAuth 2.0 Client Secret**
+4. **Note**: Keep these credentials secure
+
+### **5.4 Update Configuration**
+Add the Twitter credentials to your Xcode environment variables:
+
+```
+TWITTER_CLIENT_ID = your-actual-twitter-client-id
+TWITTER_CLIENT_SECRET = your-actual-twitter-client-secret
+```
+
+## 🔧 **Step 6: Twilio Setup**
+
+### **6.1 Create Twilio Account**
+1. Go to [Twilio Console](https://console.twilio.com/)
+2. Sign up for a free account or sign in to existing account
+3. Navigate to **"Console"** → **"Dashboard"**
+
+### **6.2 Get Account Credentials**
+1. In your Twilio Console dashboard, you'll see:
+   - **Account SID**: Starts with "AC" (e.g., `AC...`)
+   - **Auth Token**: Click "Show" to reveal (e.g., `...`)
+2. **Copy both values** - you'll need them for the app
+
+### **6.3 Update Configuration**
+Add the Twilio credentials to your Xcode environment variables:
+
+```
+TWILIO_ACCOUNT_SID = your-actual-account-sid
+TWILIO_AUTH_TOKEN = your-actual-auth-token
+```
+
+### **6.4 Using Twilio in the App**
+1. In the app, tap **"Connect"** for Twilio
+2. Enter your credentials in this format:
+   ```
+   AccountSID:AuthToken
+   ```
+   (Your Account SID followed by a colon, then your Auth Token)
+3. The app will validate your credentials by making a real API call to Twilio
+4. If successful, you'll see your account name and credentials will be stored securely
+
+### **6.5 Twilio API Validation**
+The app validates your Twilio credentials by:
+- ✅ **Format validation**: Ensures Account SID starts with "AC" and has correct length
+- ✅ **API call**: Makes a real request to Twilio's API to verify credentials
+- ✅ **Account details**: Retrieves and stores your account name
+- ✅ **Secure storage**: Encrypts and stores credentials locally
+
+**Note**: The app uses Twilio's REST API to validate credentials, so you need an internet connection for authentication.
 
 ## Security Implementation
 
