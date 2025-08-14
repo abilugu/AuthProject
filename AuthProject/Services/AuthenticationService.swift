@@ -291,6 +291,11 @@ class AuthenticationService: NSObject, ObservableObject {
             return try await authenticateWithTwilio(apiKey: apiKey)
         }
         
+        // Special handling for SendGrid (API Key)
+        if service.name == "SendGrid" {
+            return try await authenticateWithSendGrid(apiKey: apiKey)
+        }
+        
         // Simulate API key validation for other services
         try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         
@@ -383,6 +388,67 @@ class AuthenticationService: NSObject, ObservableObject {
                     throw AuthenticationError.twilioInvalidCredentials
                 } else if httpResponse.statusCode == 404 {
                     throw AuthenticationError.twilioInvalidCredentials
+                } else {
+                    throw AuthenticationError.networkError
+                }
+            }
+        } catch {
+            throw AuthenticationError.networkError
+        }
+    }
+    
+    // MARK: - SendGrid Authentication
+    
+    private func authenticateWithSendGrid(apiKey: String) async throws -> APIKeyCredentials {
+        // Validate API key format (SendGrid API keys are typically 69 characters)
+        guard apiKey.count >= 50 && apiKey.count <= 100 else {
+            throw AuthenticationError.invalidAPIKey
+        }
+        
+        // Make a real API call to validate credentials
+        let url = URL(string: "https://api.sendgrid.com/v3/user/profile")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw AuthenticationError.networkError
+            }
+            
+            if httpResponse.statusCode == 200 {
+                // Successfully authenticated
+                // Parse the response to get user details
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let email = json["email"] as? String {
+                    
+                    return APIKeyCredentials(
+                        apiKey: apiKey,
+                        additionalData: [
+                            "email": email,
+                            "validated_at": ISO8601DateFormatter().string(from: Date()),
+                            "service": "SendGrid"
+                        ]
+                    )
+                } else {
+                    // Still valid even if we can't parse the response
+                    return APIKeyCredentials(
+                        apiKey: apiKey,
+                        additionalData: [
+                            "validated_at": ISO8601DateFormatter().string(from: Date()),
+                            "service": "SendGrid"
+                        ]
+                    )
+                }
+            } else {
+                // Handle specific SendGrid error codes
+                if httpResponse.statusCode == 401 {
+                    throw AuthenticationError.sendGridInvalidCredentials
+                } else if httpResponse.statusCode == 403 {
+                    throw AuthenticationError.sendGridInvalidCredentials
                 } else {
                     throw AuthenticationError.networkError
                 }
@@ -708,6 +774,7 @@ enum AuthenticationError: Error, LocalizedError {
     case tokenExchangeFailed
     case twilioInvalidFormat
     case twilioInvalidCredentials
+    case sendGridInvalidCredentials
     
     var errorDescription: String? {
         switch self {
@@ -729,6 +796,8 @@ enum AuthenticationError: Error, LocalizedError {
             return "Invalid Twilio credentials format. Expected: AccountSID:AuthToken"
         case .twilioInvalidCredentials:
             return "Invalid Twilio credentials. Please check your Account SID and Auth Token are correct and try again."
+        case .sendGridInvalidCredentials:
+            return "Invalid SendGrid API key. Please check your API key is correct and try again."
         }
     }
 } 

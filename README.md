@@ -259,61 +259,14 @@ TIKTOK_CLIENT_SECRET = your-actual-tiktok-client-secret
    ```
    authproject://oauth/callback
    ```
-7. **Remove ALL other callback URLs** to avoid conflicts
-8. Save the configuration
 
-### **5.2.1 Troubleshooting Twitter OAuth**
-
-**Common Issues & Solutions:**
-
-1. **"Invalid redirect URI" error**:
-   - ✅ **Solution**: Use exactly `authproject://oauth/callback` in Twitter app settings
-   - ❌ **Don't use**: `authproject://oauth2redirect` or any other variations
-
-2. **"OAuth authentication was cancelled"**:
-   - ✅ **Solution**: Check that your Twitter app has the correct callback URL
-   - ✅ **Solution**: Ensure "Read and Write" permissions are enabled
-   - ✅ **Solution**: Remove ALL other callback URLs from your Twitter app
-
-3. **"Token exchange failed"**:
-   - ✅ **Solution**: Verify your Twitter Client ID and Secret are correct
-   - ✅ **Solution**: Check that your app is configured as "Web App, Automated App or Bot"
-
-4. **"No callback URL received"**:
-   - ✅ **Solution**: Ensure the URL scheme `authproject` is registered in Info.plist
-   - ✅ **Solution**: Check that ASWebAuthenticationSession is properly configured
-
-### **5.2.2 Twitter OAuth Debugging Checklist**
-
-**Before Testing:**
-- [ ] Twitter app has OAuth 2.0 enabled
-- [ ] App permissions set to "Read and Write"
-- [ ] Callback URL: `authproject://oauth/callback` (exactly this)
-- [ ] All other callback URLs removed
-- [ ] Client ID and Secret are correct in environment variables
-- [ ] App type is "Web App, Automated App or Bot"
-
-**During Testing:**
-- [ ] Check console logs for detailed OAuth flow
-- [ ] Verify authorization URL is generated correctly
-- [ ] Confirm callback URL is received
-- [ ] Validate token exchange response
-
-**Expected Flow:**
-1. User taps "Connect" for X (Twitter)
-2. Twitter OAuth page opens in Safari
-3. User authorizes the app
-4. App receives callback with authorization code
-5. App exchanges code for access token
-6. Credentials are stored securely
-
-### **5.3 Get Client Credentials**
+### **5.2 Get Client Credentials**
 1. Go to **"Keys and tokens"** tab
 2. Copy the **OAuth 2.0 Client ID**
 3. Copy the **OAuth 2.0 Client Secret**
 4. **Note**: Keep these credentials secure
 
-### **5.4 Update Configuration**
+### **5.3 Update Configuration**
 Add the Twitter credentials to your Xcode environment variables:
 
 ```
@@ -360,6 +313,36 @@ The app validates your Twilio credentials by:
 - ✅ **Secure storage**: Encrypts and stores credentials locally
 
 **Note**: The app uses Twilio's REST API to validate credentials, so you need an internet connection for authentication.
+
+## 🔧 **Step 7: SendGrid Setup**
+
+### **7.1 Create SendGrid Account**
+1. Go to [SendGrid Dashboard](https://app.sendgrid.com/)
+2. Sign up for a free account or sign in to existing account
+3. Navigate to **"Settings"** → **"API Keys"**
+
+### **7.2 Create API Key**
+1. Click **"Create API Key"**
+2. Choose **"Full Access"** or **"Restricted Access"** (Full Access recommended for testing)
+3. Give your API key a name (e.g., "AuthProject")
+4. Click **"Create & View"**
+5. **Copy the API key** - it will look like: `SG.xxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxx`
+6. **Important**: This is the only time you'll see the full API key, so copy it immediately
+
+### **7.3 Using SendGrid in the App**
+1. In the app, tap **"Connect"** for SendGrid
+2. Enter your API key (the full key starting with "SG.")
+3. The app will validate your credentials by making a real API call to SendGrid
+4. If successful, you'll see your email address and credentials will be stored securely
+
+### **7.4 SendGrid API Validation**
+The app validates your SendGrid credentials by:
+- ✅ **Format validation**: Ensures API key starts with "SG." and has correct length
+- ✅ **API call**: Makes a real request to SendGrid's API to verify credentials
+- ✅ **User details**: Retrieves and stores your email address
+- ✅ **Secure storage**: Encrypts and stores credentials locally
+
+**Note**: The app uses SendGrid's REST API to validate credentials, so you need an internet connection for authentication.
 
 ## Security Implementation
 

@@ -195,9 +195,15 @@ struct APIKeyInputView: View {
         serviceName == "Twilio"
     }
     
+    private var isSendGrid: Bool {
+        serviceName == "SendGrid"
+    }
+    
     private var placeholderText: String {
         if isTwilio {
             return "AccountSID:AuthToken"
+        } else if isSendGrid {
+            return "SG.xxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxx"
         } else {
             return "API Key"
         }
@@ -206,6 +212,8 @@ struct APIKeyInputView: View {
     private var instructionText: String {
         if isTwilio {
             return "Enter your Twilio Account SID and Auth Token in this format:\nAccountSID:AuthToken"
+        } else if isSendGrid {
+            return "Enter your SendGrid API key:"
         } else {
             return "Please enter your \(serviceName) API key:"
         }
