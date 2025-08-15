@@ -32,9 +32,16 @@ class OAuthConfigurationManager {
                 isPublicClient: true
             )
         case "Instagram":
-            // Temporarily disabled due to Facebook OAuth redirect issues
-            // TODO: Implement Instagram OAuth with a different approach
-            return nil
+            return OAuthConfig(
+                clientId: AppEnvironment.instagramClientId,
+                clientSecret: AppEnvironment.instagramClientSecret,
+                authorizationURL: URL(string: "https://www.facebook.com/v18.0/dialog/oauth")!,
+                tokenURL: URL(string: "https://graph.facebook.com/v18.0/oauth/access_token")!,
+                callbackScheme: "authproject",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "authproject://oauth/callback",
+                isPublicClient: false
+            )
         case "TikTok":
             return OAuthConfig(
                 clientId: AppEnvironment.tiktokClientId,
@@ -56,6 +63,50 @@ class OAuthConfigurationManager {
                 scopes: getScopesForService(serviceName),
                 redirectURI: "authproject://oauth/callback",
                 isPublicClient: false  // Match Android app configuration
+            )
+        case "LinkedIn":
+            return OAuthConfig(
+                clientId: AppEnvironment.linkedinClientId,
+                clientSecret: AppEnvironment.linkedinClientSecret,
+                authorizationURL: URL(string: "https://www.linkedin.com/oauth/v2/authorization")!,
+                tokenURL: URL(string: "https://www.linkedin.com/oauth/v2/accessToken")!,
+                callbackScheme: "authproject",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "authproject://oauth/callback",
+                isPublicClient: false
+            )
+        case "YouTube":
+            return OAuthConfig(
+                clientId: AppEnvironment.googleClientId,
+                clientSecret: "", // Google iOS OAuth doesn't use client secrets
+                authorizationURL: URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!,
+                tokenURL: URL(string: "https://oauth2.googleapis.com/token")!,
+                callbackScheme: "com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "com.googleusercontent.apps.566190706008-htm515doi2ee1knno6d19tb0lei5n7ub:/",
+                isPublicClient: true
+            )
+        case "Facebook":
+            return OAuthConfig(
+                clientId: AppEnvironment.facebookClientId,
+                clientSecret: AppEnvironment.facebookClientSecret,
+                authorizationURL: URL(string: "https://www.facebook.com/v18.0/dialog/oauth")!,
+                tokenURL: URL(string: "https://graph.facebook.com/v18.0/oauth/access_token")!,
+                callbackScheme: "authproject",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "authproject://oauth/callback",
+                isPublicClient: false
+            )
+        case "Snapchat":
+            return OAuthConfig(
+                clientId: AppEnvironment.snapchatClientId,
+                clientSecret: AppEnvironment.snapchatClientSecret,
+                authorizationURL: URL(string: "https://accounts.snapchat.com/accounts/oauth2/auth")!,
+                tokenURL: URL(string: "https://accounts.snapchat.com/accounts/oauth2/token")!,
+                callbackScheme: "authproject",
+                scopes: getScopesForService(serviceName),
+                redirectURI: "authproject://oauth/callback",
+                isPublicClient: false
             )
         default:
             return nil
@@ -84,6 +135,14 @@ class OAuthConfigurationManager {
             return ["user.info.basic", "user.info.profile", "user.info.stats", "video.list", "video.upload"]
         case "X (Twitter)":
             return ["tweet.read", "users.read", "offline.access"]
+        case "LinkedIn":
+            return ["r_liteprofile", "r_emailaddress", "w_member_social"]
+        case "YouTube":
+            return ["https://www.googleapis.com/auth/youtube", "https://www.googleapis.com/auth/youtube.upload"]
+        case "Facebook":
+            return ["email", "public_profile", "user_posts"]
+        case "Snapchat":
+            return ["https://auth.snapchat.com/oauth2/api/user.display_name", "https://auth.snapchat.com/oauth2/api/user.bitmoji.avatar"]
         default:
             return []
         }

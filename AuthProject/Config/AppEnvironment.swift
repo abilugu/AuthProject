@@ -42,6 +42,33 @@ struct AppEnvironment {
         return ProcessInfo.processInfo.environment["TWITTER_CLIENT_SECRET"] ?? "YOUR_TWITTER_CLIENT_SECRET"
     }()
     
+    // MARK: - LinkedIn OAuth
+    static let linkedinClientId: String = {
+        return ProcessInfo.processInfo.environment["LINKEDIN_CLIENT_ID"] ?? "YOUR_LINKEDIN_CLIENT_ID"
+    }()
+    
+    static let linkedinClientSecret: String = {
+        return ProcessInfo.processInfo.environment["LINKEDIN_CLIENT_SECRET"] ?? "YOUR_LINKEDIN_CLIENT_SECRET"
+    }()
+    
+    // MARK: - Facebook OAuth
+    static let facebookClientId: String = {
+        return ProcessInfo.processInfo.environment["FACEBOOK_CLIENT_ID"] ?? "YOUR_FACEBOOK_CLIENT_ID"
+    }()
+    
+    static let facebookClientSecret: String = {
+        return ProcessInfo.processInfo.environment["FACEBOOK_CLIENT_SECRET"] ?? "YOUR_FACEBOOK_CLIENT_SECRET"
+    }()
+    
+    // MARK: - Snapchat OAuth
+    static let snapchatClientId: String = {
+        return ProcessInfo.processInfo.environment["SNAPCHAT_CLIENT_ID"] ?? "YOUR_SNAPCHAT_CLIENT_ID"
+    }()
+    
+    static let snapchatClientSecret: String = {
+        return ProcessInfo.processInfo.environment["SNAPCHAT_CLIENT_SECRET"] ?? "YOUR_SNAPCHAT_CLIENT_SECRET"
+    }()
+    
     // MARK: - API Key Services
     static let sendGridApiKey: String = {
         return ProcessInfo.processInfo.environment["SENDGRID_API_KEY"] ?? "YOUR_SENDGRID_API_KEY"

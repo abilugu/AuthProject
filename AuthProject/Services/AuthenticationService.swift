@@ -57,7 +57,13 @@ class AuthenticationService: NSObject, ObservableObject {
         }
         
         // Check if we have valid client credentials
-        guard !oauthConfig.clientId.isEmpty && !oauthConfig.clientSecret.isEmpty else {
+        // For Google services (public clients), clientSecret can be empty
+        guard !oauthConfig.clientId.isEmpty else {
+            throw AuthenticationError.invalidConfiguration
+        }
+        
+        // For non-public clients, require client secret
+        if !oauthConfig.isPublicClient && oauthConfig.clientSecret.isEmpty {
             throw AuthenticationError.invalidConfiguration
         }
         
