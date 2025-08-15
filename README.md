@@ -38,14 +38,16 @@ A comprehensive iOS application built with SwiftUI and MVVM architecture that de
 - **Google Sheets** ✅
 - **Google Drive** ✅
 - **Google Gmail** ✅
-- **YouTube** ✅ (Just fixed!)
-- **Microsoft Office 365** ✅
-- **LinkedIn** ✅
-- **TikTok** ✅
-- **X (Twitter)** ✅ (though has redirect issues)
-- **Instagram** ✅ (configured)
-- **Facebook** ✅ (configured)
-- **Snapchat** ✅ (configured)
+- **YouTube** ✅
+- **Office 365 Calendar** ✅
+- **Office 365 Mail (Outlook)** ✅
+- **OneDrive** ✅
+- **LinkedIn** ⚠️ (configured)
+- **TikTok** ⚠️ (configured)
+- **X (Twitter)** ⚠️ (configured)
+- **Instagram** ⚠️ (configured)
+- **Facebook** ⚠️ (configured)
+- **Snapchat** ⚠️ (configured)
 
 ### ✅ API Key Services (Working):
 - **SendGrid** ✅
